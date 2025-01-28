@@ -1,9 +1,5 @@
 module TwoD_advection
 
-using Plots
-using ProgressMeter
-using Utilities
-
 export literature_fluid_field, advect
 
 function literature_fluid_field(X, Y, L=1, n=20; α=0, F=1)
@@ -57,8 +53,11 @@ function advect(P::T) where {T<:Matrix{Float64}}
 
     return uxdxP .+ uydyP
 end
-
 end
+
+using Plots
+using ProgressMeter
+using .Utilities
 
 function update_advec!(x::Matrix{Float64})
     udP = dt.*advect(x)
