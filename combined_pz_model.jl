@@ -135,16 +135,16 @@ init!(zoo)
 p_count = []
 z_count = []
 
-anim_len = 300
+anim_len = 800
 it_per_frame = 10
+plot_after = 500
 
 prog = Progress(anim_len)
 
 @gif for i=1:anim_len
     title = plot(title = "Frame: $i/$anim_len", grid = false, showaxis = false, bottom_margin = -50Plots.px)
-
-    p1 = heatmap(phyto, cbar=false, c=cgrad(:GnBu, scale=:exp, rev=true), xaxis=nothing, yaxis=nothing)
-    p2 = heatmap(zoo, cbar=false, c=cgrad(:amp, scale=:exp, rev=true), xaxis=nothing, yaxis=nothing)
+    p1 = surface(phyto, cbar=false, c=cgrad(:GnBu, scale=:exp, rev=true), xaxis=nothing, yaxis=nothing)
+    p2 = surface(zoo, cbar=false, c=cgrad(:amp, scale=:exp, rev=true), xaxis=nothing, yaxis=nothing)
     #p1 = heatmap(phyto, cbar=false, c=cgrad(:GnBu, scale=:exp, rev=true))
     #p2 = heatmap(zoo, cbar=false, c=cgrad(:amp, scale=:exp, rev=true)) 
     zaxis!(p1, (0,1))
@@ -154,7 +154,7 @@ prog = Progress(anim_len)
     push!(p_count, sum(phyto./(n.^2)))
     push!(z_count, sum(zoo./(n.^2)))
     p3 = plot([p_count, z_count], label=["Phyto" "Zoo"])
-    xaxis!(p3, (0, anim_len))
+    xaxis!(p3, (plot_after, anim_len))
     yaxis!(p3, (0, 1))
 
     plot(title, p1, p2, p3, layout=@layout([A{0.01h}; [B C]; D]), size=(700, 700))
@@ -163,5 +163,5 @@ prog = Progress(anim_len)
         update!(phyto, zoo)
     end
     next!(prog)
-end
+end when i >= plot_after
 
