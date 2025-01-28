@@ -1,16 +1,15 @@
-module TwoD_advection
+using Plots
+using ProgressMeter
+using .Utilities
 
-export literature_fluid_field, advect
-
-function literature_fluid_field(X, Y, L=1, n=20; α=0, F=1)
+function literature_fluid_field(X, Y, L, n; α=0, F=0.1)
     uy = @. F * (α * sin(2 * π * Y / L) + (1 - α) * sin(2 * π * X / L))
     ux = @. F * (α * sin(2 * π * X / L) + (1 - α) * sin(2 * π * Y / L))
 
-    ux_grid = transpose(reshape(ux, (n, n)))
     uy_grid = transpose(reshape(uy, (n, n)))
+    ux_grid = transpose(reshape(ux, (n, n)))
 
     # ux and uy are vectors n*n long, wanted if doing a quiver plots,
-
     return ux_grid, uy_grid, ux, uy
 end
 
@@ -35,6 +34,7 @@ function advect(P::T) where {T<:Matrix{Float64}}
             
             # second order upwind scheme
             # gives by far the best stability
+            # the 0.1 is the grid spacing = L/n
             if ux_grid[i,j] >= 0
                 dxP[i,j] = (-r_2n + 4r_n - 3P[i,j])/(2*0.1)
             else
@@ -53,11 +53,6 @@ function advect(P::T) where {T<:Matrix{Float64}}
 
     return uxdxP .+ uydyP
 end
-end
-
-using Plots
-using ProgressMeter
-using .Utilities
 
 function update_advec!(x::Matrix{Float64})
     udP = dt.*advect(x)
@@ -67,9 +62,9 @@ function update_advec!(x::Matrix{Float64})
     return x
 end
 
-L = 40
-n = L
-dt = 0.001
+L = 2
+n = 100L
+dt = 0.1
 
 # plotting on the range of -L/4 -> 3L/4 visualises the two vortices (for α = 0) nicely
 x_vals = range(-L/4, 3L/4, n)
@@ -80,24 +75,25 @@ ux_grid, uy_grid, _ = literature_fluid_field(X, Y, L, n)
 
 # initialise something to be advected 
 phyto = zeros(n, n)
-init!(phyto)
+init!(phyto; b=50, c=40)
 
-anim_len = 200
+anim_len = 500
+it_per_frame = 10
 
 # create a visual progress meter in the console
 prog = Progress(anim_len)
 
 @gif for i=1:anim_len
     # plotting a surface or a heatmap are nice
-    it = i*100
-    p1 = surface(phyto, cbar=false, c=cgrad(:GnBu, scale=:exp, rev=true), camera=(45, 55), title="Frame: $i , Iteration: $it")
+    it = i*it_per_frame
+    p1 = heatmap(phyto, cbar=false, c=cgrad(:GnBu, scale=:exp, rev=true), camera=(45, 55), title="Frame: $i , Iteration: $it")
     zaxis!(p1, (0, 1))
 
     plot(p1, size=(600, 600))
 
     # run the simulation a few times inbetween plotting to speed up the animation and avoid plotting too much, especially with surface plots
     # using a lower dt value reduces the number of time iterations you need
-    for j in 1:100
+    for j in 1:it_per_frame
         update_advec!(phyto)
     end
 

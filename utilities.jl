@@ -4,13 +4,12 @@ export init!, meshgrid, init_slope!, runge_kutta
 
 meshgrid(x, y) = (repeat(x, outer=length(y)), repeat(y, inner=length(x)))
 
-function init!(x::Matrix{Float64})
+function init!(x::Matrix{Float64};b=10,c=5)
     len = size(x)[1]
     a = ceil(len/2)
-    b = 10
     for i in 1:len
         for j in 1:len
-            x[i, j] = 5exp(-0.5((i/b-a/b)^2 + (j/b-a/b)^2))/b
+            x[i, j] = c*exp(-0.5((i/b-a/b)^2 + (j/b-a/b)^2))/b
         end
     end
     return x
@@ -30,7 +29,7 @@ function init_slope!(x::Matrix{Float64}; a=true)
     return x
 end
 
-function runge_kutta(x, y, func)
+function runge_kutta(x, y, func, dt)
     #=
     normal eulerian method builds error very quickly
     so use runge-kutta 4 instead
@@ -47,7 +46,7 @@ function runge_kutta(x, y, func)
     return xn_plus_1, yn_plus_1
 end
 
-function runge_kutta(x, func)
+function runge_kutta(x, func, dt)
     k1 = func(x)
     k2 = func(x .+ dt.*k1./2)
     k3 = func(x .+ dt.*k2./2)
@@ -56,4 +55,5 @@ function runge_kutta(x, func)
     xn_plus_1 = @. dt*(k1 + 2k2 + 2k3 + k4)
     return xn_plus_1
 end
+
 end

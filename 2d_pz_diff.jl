@@ -1,6 +1,6 @@
-module CompDiff
-
-export periodic_laplacian!, logistic!
+using Plots
+using ProgressMeter
+using .Utilities
 
 function periodic_laplacian!(x::Matrix{Float64})
     len = size(x)[1]
@@ -44,32 +44,30 @@ function logistic!(u::Matrix{Float64}, v::Matrix{Float64})
     #dv = @. γ * v * (δ * u^2 / (u^2 + k) - λ)
     return du, dv
 end
-end
-
-using Plots
-using ProgressMeter
-using .Utilities
 
 function update!(p::Matrix{Float64}, z::Matrix{Float64})
-    dp_diff = runge_kutta(p, periodic_laplacian!)
-    dz_diff = runge_kutta(z, periodic_laplacian!)
+    dt = 0.1
+    #im not entirely sure whether i actually should apply runge kutta to the laplacian algorithm,
+    #but i like it, so im doing it
+    dp_diff = runge_kutta(p, periodic_laplacian!, dt)
+    dz_diff = runge_kutta(z, periodic_laplacian!, dt)
+    #dp_diff = dt.*periodic_laplacian!(p)
+    #dz_diff = dt.*periodic_laplacian!(z)
     p .+= dp_diff
     z .+= dz_diff
-    dp_source, dz_source = runge_kutta(p, z, logistic!)
+    dp_source, dz_source = runge_kutta(p, z, logistic!, dt)
     p .+= dp_source
     z .+= dz_source
     return p, z
 end
 
 dim = 200
-dt = 0.1
 
 parr = zeros(dim, dim)
 zarr = zeros(dim, dim)
 
 init!(zarr)
 init_slope!(parr; a=false)
-
 
 p_count = []
 z_count = []
@@ -85,16 +83,16 @@ p = Progress(anim_len)
     # plot average density of phyto and zoo
     p3 = plot([p_count./(dim.^2), z_count./(dim.^2)], label = ["phyto" "zoo"])
     xaxis!(p3, (0, anim_len))
-    yaxis!(p3, (0, 1))
+    yaxis!(p3, (0, 0.1))
     zaxis!(p1, (0, 1))
-    zaxis!(p2, (0, 1))
-    plot(p1, p2, p3, layout=(2, 2), size=(800, 800))
+    zaxis!(p2, (0, 0.4))
+    plot(p1, p2, p3, layout=(2, 2), size=(800, 800), title="Frame: $i/%$anim_len")
     push!(p_count, sum(parr))
     push!(z_count, sum(zarr))
 
     # becuase dt != 1, run the simulation a few times before
     # inbetween each frame so it moves at a decent pace
-    for i in 1:10
+    for j in 1:10
         update!(parr, zarr)
     end
     next!(p)
