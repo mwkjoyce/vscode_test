@@ -1,7 +1,10 @@
+module TwoD_advection
+
 using Plots
 using ProgressMeter
+using Utilities
 
-meshgrid(x, y) = (repeat(x, outer=length(y)), repeat(y, inner=length(x)))
+export literature_fluid_field, advect
 
 function literature_fluid_field(X, Y, L=1, n=20; α=0, F=1)
     uy = @. F * (α * sin(2 * π * Y / L) + (1 - α) * sin(2 * π * X / L))
@@ -55,16 +58,6 @@ function advect(P::T) where {T<:Matrix{Float64}}
     return uxdxP .+ uydyP
 end
 
-function init!(x::Matrix{Float64})
-    len = size(x)[1]
-    a = ceil(len/2)
-    b = 10
-    for i in 1:len
-        for j in 1:len
-            x[i, j] = 5exp(-0.5((i/b-a/b)^2 + (j/b-a/b)^2))/b
-        end
-    end
-    return x
 end
 
 function update_advec!(x::Matrix{Float64})
