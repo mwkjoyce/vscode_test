@@ -3,22 +3,27 @@ using ProgressMeter
 
 meshgrid(x, y) = (repeat(x, outer=length(y)), repeat(y, inner=length(x)))
 
-function literature_fluid_field(X, Y; L=1, n=20, α=0, F=1)
-    uy = @. F * (α * sin(2 * π * Y / L) + (1 - α) * sin(2 * π * X / L)) 
-    ux = @. F * (α * sin(2 * π * X / L) + (1 - α) * sin(2 * π * Y / L)) 
+function literature_fluid_field(X, Y, L=1, n=20; α=0, F=1)
+    uy = @. F * (α * sin(2 * π * Y / L) + (1 - α) * sin(2 * π * X / L))
+    ux = @. F * (α * sin(2 * π * X / L) + (1 - α) * sin(2 * π * Y / L))
 
     ux_grid = transpose(reshape(ux, (n, n)))
     uy_grid = transpose(reshape(uy, (n, n)))
+
+    # ux and uy are vectors n*n long, wanted if doing a quiver plots,
+
     return ux_grid, uy_grid, ux, uy
 end
 
 function advect(P::T) where {T<:Matrix{Float64}}
+    # dont update the input, but return matrices to add the the input later
     len = size(P)[1]
     dxP, dyP = zeros(len, len), zeros(len, len)
     uxdxP, uydyP = zeros(len, len), zeros(len, len)
 
     for i in 1:len
         for j in 1:len
+            #periodic boundary conditions, with two steps forwards/backwards also available
             t_n = P[mod1(i - 1, len), j]
             b_n = P[mod1(i + 1, len), j]
             t_2n = P[mod1(i - 2, len), j]
@@ -43,8 +48,7 @@ function advect(P::T) where {T<:Matrix{Float64}}
             end
         end
     end
-    # the -ve makes it work, i think it has to do with how 
-    # u⁻ wants a⁺
+    # the -ve makes it work, i think it has to do with how u⁻ combines a⁺ (wikipedia)
     uxdxP = -ux_grid .* dxP
     uydyP = -uy_grid .* dyP
 
@@ -63,36 +67,7 @@ function init!(x::Matrix{Float64})
     return x
 end
 
-function periodic_laplacian!(x::Matrix{Float64})
-    len = size(x)[1]
-    u = zeros(len, len)
-    
-    for i in 1:len
-        for j in 1:len
-            t_n = x[mod1(i - 1, len), j]
-            b_n = x[mod1(i + 1, len), j]
-            
-            r_n = x[i, mod1(j - 1, len)]
-            l_n = x[i, mod1(j + 1, len)]
-            
-            u[i, j] = 0.25 * (t_n + b_n + r_n + l_n) - x[i, j]
-        end
-    end
-    return u
-end
-
-function runge_kutta(x, func)
-    k1 = func(x)
-    k2 = func(x .+ dt.*k1./2)
-    k3 = func(x .+ dt.*k2./2)
-    k4 = func(x .+ dt.*k3)
-
-    xn_plus_1 = @. dt*(k1 + 2k2 + 2k3 + k4)
-    return xn_plus_1
-end
-
-function update!(x::Matrix{Float64})
-    #udP = runge_kutta(x, advect)
+function update_advec!(x::Matrix{Float64})
     udP = dt.*advect(x)
     x .-= udP
     #dp_diff = runge_kutta(x, periodic_laplacian!)
@@ -100,42 +75,40 @@ function update!(x::Matrix{Float64})
     return x
 end
 
-L = 2
-n = 20L
+L = 40
+n = L
 dt = 0.001
 
+# plotting on the range of -L/4 -> 3L/4 visualises the two vortices (for α = 0) nicely
 x_vals = range(-L/4, 3L/4, n)
 y_vals = range(-L/4, 3L/4, n)
 X, Y = meshgrid(x_vals, y_vals)
 
-ux_grid, uy_grid, ux, uy = literature_fluid_field(X, Y;L, n)
+ux_grid, uy_grid, _ = literature_fluid_field(X, Y, L, n)
 
+# initialise something to be advected 
 phyto = zeros(n, n)
 init!(phyto)
 
-
-u = zeros(n, n)
-for i in 1:n
-    for j in 1:n
-        u[i,j] = sqrt(uy_grid[i,j]^2 + ux_grid[i,j]^2)
-        #u[i,j] = uy_grid[i, j] + ux_grid[i,j]
-    end
-end
-
 anim_len = 200
 
+# create a visual progress meter in the console
 prog = Progress(anim_len)
 
-phyto_init = copy(phyto)
-
 @gif for i=1:anim_len
-    p2 = surface(phyto, cbar=false, camera=(45, 55), title="Frame: $i")
-    zaxis!(p2, (0, 1))
+    # plotting a surface or a heatmap are nice
+    it = i*100
+    p1 = surface(phyto, cbar=false, c=cgrad(:GnBu, scale=:exp, rev=true), camera=(45, 55), title="Frame: $i , Iteration: $it")
+    zaxis!(p1, (0, 1))
 
-    plot(p2, size=(600, 600))
+    plot(p1, size=(600, 600))
 
-    for i in 1:100
-        update!(phyto)
+    # run the simulation a few times inbetween plotting to speed up the animation and avoid plotting too much, especially with surface plots
+    # using a lower dt value reduces the number of time iterations you need
+    for j in 1:100
+        update_advec!(phyto)
     end
+
+    #update the progress meter
     next!(prog)
 end
