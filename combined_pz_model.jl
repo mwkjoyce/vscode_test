@@ -135,7 +135,7 @@ init!(zoo)
 p_count = []
 z_count = []
 
-anim_len = 400
+anim_len = 300
 it_per_frame = 10
 
 prog = Progress(anim_len)

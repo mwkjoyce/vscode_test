@@ -77,8 +77,8 @@ ux_grid, uy_grid, _ = literature_fluid_field(X, Y, L, n)
 phyto = zeros(n, n)
 init!(phyto; b=50, c=40)
 
-anim_len = 500
-it_per_frame = 10
+anim_len = 100
+it_per_frame = 50
 
 # create a visual progress meter in the console
 prog = Progress(anim_len)
@@ -86,7 +86,7 @@ prog = Progress(anim_len)
 @gif for i=1:anim_len
     # plotting a surface or a heatmap are nice
     it = i*it_per_frame
-    p1 = heatmap(phyto, cbar=false, c=cgrad(:GnBu, scale=:exp, rev=true), camera=(45, 55), title="Frame: $i , Iteration: $it")
+    p1 = surface(phyto, cbar=false, c=cgrad(:GnBu, scale=:exp, rev=true), camera=(45, 55), title="Frame: $i , Iteration: $it")
     zaxis!(p1, (0, 1))
 
     plot(p1, size=(600, 600))
