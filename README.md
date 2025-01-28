@@ -5,3 +5,6 @@
 # Created in a fluid flow:
 ![](https://github.com/mwkjoyce/vscode_test/blob/main/images/fluid_vis.png)
 ![me](https://github.com/mwkjoyce/vscode_test/blob/main/images/jl_RubgLwFA7w.gif)
+
+# Stable State:
+![](https://github.com/mwkjoyce/vscode_test/blob/main/images/jl_cPMpmHybI1.gif)
